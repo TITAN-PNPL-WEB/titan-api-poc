@@ -112,6 +112,30 @@ src/main/java/pocfreechoice/
     └── AnalyzeResponse.java
 ```
 
+## Functional POC
+
+This repository is part of a functional Proof of Concept (POC) of the TITAN refactoring.
+
+### Version
+
+The POC is versioned using:
+
+`poc-functional-v1`
+
+### Repositories
+
+- Core: https://github.com/TITAN-PNPL-WEB/titan-core-fork
+- API: https://github.com/TITAN-PNPL-WEB/titan-api-poc
+
+Both repositories must be used with the same tag:
+`poc-functional-v1`
+
+### What it includes
+
+- Free-choice Petri net analysis
+- REST API integration
+- End-to-end execution
+
 ## Notes
 
 - This is a POC — no authentication, no error handling, no tests.
