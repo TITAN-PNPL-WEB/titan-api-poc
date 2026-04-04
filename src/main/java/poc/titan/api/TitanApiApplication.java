@@ -1,11 +1,11 @@
-package pocfreechoice;
+package poc.titan.api;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class PocFreeChoiceApplication {
+public class TitanApiApplication {
     public static void main(String[] args) {
-        SpringApplication.run(PocFreeChoiceApplication.class, args);
+        SpringApplication.run(TitanApiApplication.class, args);
     }
 }

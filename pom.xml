@@ -11,8 +11,8 @@
         <relativePath/>
     </parent>
 
-    <groupId>org.pocfreechoice</groupId>
-    <artifactId>poc-free-choice</artifactId>
+    <groupId>poc.titan.api</groupId>
+    <artifactId>titan-api-poc</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
@@ -64,11 +64,6 @@
         <dependency>
             <groupId>org.pnpl</groupId>
             <artifactId>analysis-core</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.pnpl</groupId>
-            <artifactId>analysis-freechoice</artifactId>
             <version>1.0.0</version>
         </dependency>
         <dependency>
@@ -148,7 +143,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>pocfreechoice.PocFreeChoiceApplication</mainClass>
+                    <mainClass>poc.titan.api.TitanApiApplication</mainClass>
                 </configuration>
             </plugin>
         </plugins>

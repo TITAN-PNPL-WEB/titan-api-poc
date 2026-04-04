@@ -1,4 +1,4 @@
-package pocfreechoice.dto;
+package poc.titan.api.dto;
 
 import java.util.List;
 

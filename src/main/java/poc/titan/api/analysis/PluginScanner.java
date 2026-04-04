@@ -1,38 +1,26 @@
-package pocfreechoice.analysis;
+package poc.titan.api.analysis;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
+import org.w3c.dom.*;
+import javax.xml.parsers.*;
+import java.io.*;
+import java.net.*;
+import java.nio.file.*;
+import java.util.*;
+import java.util.jar.*;
 
 @Component
 public class PluginScanner {
 
     private static final String PLUGINS_DIR = "plugins";
-    private static final String EXT_PNPL = "org.pnpl.analysis.analyzer.pnpl";
+    private static final String EXT_PNPL     = "org.pnpl.analysis.analyzer.pnpl";
     private static final String EXT_PRODUCTS = "org.pnpl.analysis.analyzer.products";
 
     private final List<AnalysisDescriptor> analyses = new ArrayList<>();
+    private URLClassLoader pluginClassLoader;
 
-    /**
-     * This method scans plugins folder, reads plugins and registers analysis
-     *
-     * @throws Exception
-     */
-    @PostConstruct //annotation: Spring will execute this automatically after create and inject the bean
+    @PostConstruct
     public void scan() throws Exception {
         Path pluginsPath = Paths.get(PLUGINS_DIR);
         if (!Files.exists(pluginsPath)) {
@@ -40,13 +28,20 @@ public class PluginScanner {
             return;
         }
 
+        List<URL> jarUrls = new ArrayList<>();
         List<Path> jars = Files.list(pluginsPath)
                 .filter(p -> p.toString().endsWith(".jar"))
                 .toList();
 
         for (Path jar : jars) {
+            jarUrls.add(jar.toUri().toURL());
             scanJar(jar);
         }
+
+        pluginClassLoader = new URLClassLoader(
+                jarUrls.toArray(new URL[0]),
+                Thread.currentThread().getContextClassLoader()
+        );
 
         System.out.println("[scanner] Found analyses: " + analyses);
     }
@@ -70,9 +65,9 @@ public class PluginScanner {
                 NodeList clients = ext.getElementsByTagName("client");
                 for (int j = 0; j < clients.getLength(); j++) {
                     Element client = (Element) clients.item(j);
-                    String name = client.getAttribute("name");
+                    String name  = client.getAttribute("name");
                     String clazz = client.getAttribute("class");
-                    String type = point.equals(EXT_PNPL) ? "pnpl" : "products";
+                    String type  = point.equals(EXT_PNPL) ? "pnpl" : "products";
 
                     AnalysisDescriptor descriptor = new AnalysisDescriptor(name, clazz, type);
                     if (!analyses.contains(descriptor)) {
@@ -83,7 +78,20 @@ public class PluginScanner {
         }
     }
 
+    /**
+     * Returns the descriptor matching the given name and type, or empty if not found.
+     */
+    public Optional<AnalysisDescriptor> find(String name, String type) {
+        return analyses.stream()
+                .filter(d -> d.name.equals(name) && d.type.equals(type))
+                .findFirst();
+    }
+
     public List<AnalysisDescriptor> getAnalyses() {
         return Collections.unmodifiableList(analyses);
+    }
+
+    public URLClassLoader getPluginClassLoader() {
+        return pluginClassLoader;
     }
 }

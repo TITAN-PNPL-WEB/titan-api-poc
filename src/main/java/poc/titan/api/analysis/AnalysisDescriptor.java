@@ -1,4 +1,4 @@
-package pocfreechoice.analysis;
+package poc.titan.api.analysis;
 
 import java.util.Objects;
 
