@@ -1,10 +1,12 @@
 package pocfreechoice.service;
 
+import org.springframework.stereotype.Service;
 import pocfreechoice.dto.AnalyzeResponse;
 import org.pnpl.analysis.freechoice.analysis.AnalysisPNPL;
 
 import java.nio.file.Path;
 
+@Service
 public class FreeChoiceService {
     public AnalyzeResponse run(Path vrbPath) throws Exception {
         long start = System.currentTimeMillis();
