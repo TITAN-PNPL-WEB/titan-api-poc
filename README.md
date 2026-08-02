@@ -1,10 +1,10 @@
 # TITAN PNPL Web — POC Analysis API
 
-Proof of concept of a REST API that exposes TITAN's analysis capabilities as HTTP endpoints, decoupled from the Eclipse IDE.
+Proof of concept of a REST API that exposes TITAN's analysis and validation capabilities as HTTP endpoints, decoupled from the Eclipse IDE.
 
 ## Context
 
-TITAN is an Eclipse-based tool for the analysis of Petri Net Product Lines (PNPL). Originally, analyses are triggered through the Eclipse UI. This POC demonstrates that the analysis logic can be executed headlessly via a REST API, using the TITAN Eclipse plugins loaded dynamically from a `plugins/` directory.
+TITAN is an Eclipse-based tool for the analysis of Petri Net Product Lines (PNPL). Originally, analyses and validations are triggered through the Eclipse UI. This POC demonstrates that the analysis and validation logic can be executed headlessly via a REST API, using the TITAN Eclipse plugins loaded dynamically from a `plugins/` directory.
 
 ## Requirements
 
@@ -100,6 +100,59 @@ curl http://localhost:8080/pnpl/analyses
 
 ---
 
+### POST /pnpl/validate
+
+Validates a `.vrb` file using the Xtext parser and validator in standalone mode (no Eclipse). Runs three layers of validation: syntax (ANTLR parser from grammar), cross-references (elements exist in `.petrinets`), and semantic checks (features exist in `model.xml`).
+
+**Request body:**
+```json
+{
+  "vrbPath": "/absolute/path/to/annotation.vrb"
+}
+```
+
+- `vrbPath` — absolute path to the `.vrb` file. The `.petrinets` and `.xml` files referenced inside the `.vrb` must be in the same directory.
+
+**Response (valid):**
+```json
+{
+  "valid": true,
+  "issues": []
+}
+```
+
+**Response (invalid):**
+```json
+{
+  "valid": false,
+  "issues": [
+    {
+      "severity": "ERROR",
+      "message": "no viable alternative at input 'AND'",
+      "line": 7,
+      "column": 39
+    },
+    {
+      "severity": "ERROR",
+      "message": "Feature 'AND' does not exist",
+      "line": 7,
+      "column": 39
+    }
+  ]
+}
+```
+
+**Example with curl:**
+```bash
+curl -X POST http://localhost:8080/pnpl/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "vrbPath": "/path/to/examples/annotation.vrb"
+  }'
+```
+
+---
+
 ### POST /pnpl/analyze
 
 Runs the specified analysis on a given `.vrb` file.
@@ -149,16 +202,29 @@ titan-api-poc/
     ├── TitanApiApplication.java                  # Spring Boot entry point
     ├── analysis/
     │   ├── AnalysisDescriptor.java               # Represents a discovered analysis
-    │   └── PluginScanner.java                    # Scans plugins/ and registers analyses
+    │   ├── PluginScanner.java                    # Scans plugins/ and registers analyses
+    │   └── XtextInitializer.java                 # Registers Xtext language at startup
     ├── controller/
-    │   └── AnalysisController.java               # REST endpoints
+    │   ├── AnalysisController.java               # REST endpoints for analysis
+    │   └── ValidationController.java             # REST endpoint for validation
     ├── dto/
     │   ├── AnalysesResponse.java                 # Response for GET /analyses
     │   ├── AnalysisRequest.java                  # Request for POST /analyze
-    │   └── AnalysisResponse.java                 # Response for POST /analyze
+    │   ├── AnalysisResponse.java                 # Response for POST /analyze
+    │   ├── ValidationRequest.java                # Request for POST /validate
+    │   └── ValidationResponse.java               # Response for POST /validate
     └── service/
-        └── AnalysisService.java                  # Analysis execution logic
+        ├── AnalysisService.java                  # Analysis execution logic
+        └── ValidationService.java                # Xtext validation pipeline
 ```
+
+## Validation architecture
+
+The validation endpoint uses the Xtext language infrastructure from the `model-variability-editor` dependency in standalone mode (no Eclipse/OSGi). At startup, `XtextInitializer` calls `PNPL_variabilityStandaloneSetup.createInjectorAndDoEMFRegistration()` to register the `.vrb` language and creates a Guice injector. Per request, `ValidationService` creates a fresh `XtextResourceSet`, pre-loads the `.petrinets` file for cross-reference resolution, loads the `.vrb` with the Xtext parser, and runs `IResourceValidator.validate()` which triggers:
+
+1. **Syntax validation** — ANTLR parser checks the `.vrb` conforms to the `PNPL_variability.xtext` grammar
+2. **Cross-reference validation** — verifies that element names in presence conditions (places, transitions, arcs) exist in the referenced `.petrinets` file
+3. **Semantic validation** — `@Check checkValidFeature` in `PNPL_variabilityValidator` verifies that feature names used in presence condition expressions exist in the `model.xml` feature model
 
 ## Functional POC
 
@@ -181,6 +247,7 @@ Both repositories must be used with the same tag: `poc-functional-v1`
 
 - Dynamic discovery of analysis plugins from `plugins/` directory
 - `GET /pnpl/analyses` — list all available analyses
+- `POST /pnpl/validate` — validate `.vrb` files using Xtext standalone
 - `POST /pnpl/analyze` — run any analysis generically
 - End-to-end execution decoupled from Eclipse
 
