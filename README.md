@@ -71,31 +71,41 @@ mvn spring-boot:run
 
 The server starts on `http://localhost:8080`.
 
+## CORS
+
+The API allows requests from `http://localhost:5173` (Vite dev server) to all `/pnpl/**` endpoints. This is configured in `CorsConfig.java`. When deploying to production, update the allowed origins accordingly.
+
 ## Endpoints
 
-### GET /pnpl/analyses
+### POST /pnpl/upload
 
-Returns the list of all available analyses discovered from the `plugins/` directory.
+Receives the 3 model files as multipart/form-data, saves them in a temporary directory on the server, and returns the `vrbPath` for subsequent validate and analyze calls.
+
+**Request:**
+```
+POST /pnpl/upload
+Content-Type: multipart/form-data
+
+Parts:
+  vrb          → the .vrb file
+  petrinets    → the .petrinets file
+  featureModel → the .xml file
+```
 
 **Response:**
 ```json
 {
-  "analyses": [
-    { "name": "Free Choice", "type": "pnpl" },
-    { "name": "Free Choice", "type": "products" },
-    { "name": "Extended Free Choice", "type": "pnpl" },
-    { "name": "Extended Free Choice", "type": "products" },
-    { "name": "Marked Graphs", "type": "pnpl" },
-    { "name": "Marked Graphs", "type": "products" },
-    { "name": "State Machines", "type": "pnpl" },
-    { "name": "State Machines", "type": "products" }
-  ]
+  "vrbPath": "/tmp/titan-abc123/annotation.vrb",
+  "message": "Files uploaded successfully"
 }
 ```
 
 **Example with curl:**
 ```bash
-curl http://localhost:8080/pnpl/analyses
+curl -X POST http://localhost:8080/pnpl/upload \
+  -F "vrb=@/path/to/annotation.vrb" \
+  -F "petrinets=@/path/to/150mm.petrinets" \
+  -F "featureModel=@/path/to/model.xml"
 ```
 
 ---
@@ -107,11 +117,9 @@ Validates a `.vrb` file using the Xtext parser and validator in standalone mode 
 **Request body:**
 ```json
 {
-  "vrbPath": "/absolute/path/to/annotation.vrb"
+  "vrbPath": "/tmp/titan-abc123/annotation.vrb"
 }
 ```
-
-- `vrbPath` — absolute path to the `.vrb` file. The `.petrinets` and `.xml` files referenced inside the `.vrb` must be in the same directory.
 
 **Response (valid):**
 ```json
@@ -147,8 +155,35 @@ Validates a `.vrb` file using the Xtext parser and validator in standalone mode 
 curl -X POST http://localhost:8080/pnpl/validate \
   -H "Content-Type: application/json" \
   -d '{
-    "vrbPath": "/path/to/examples/annotation.vrb"
+    "vrbPath": "/tmp/titan-abc123/annotation.vrb"
   }'
+```
+
+---
+
+### GET /pnpl/analyses
+
+Returns the list of all available analyses discovered from the `plugins/` directory.
+
+**Response:**
+```json
+{
+  "analyses": [
+    { "name": "Free Choice", "type": "pnpl" },
+    { "name": "Free Choice", "type": "products" },
+    { "name": "Extended Free Choice", "type": "pnpl" },
+    { "name": "Extended Free Choice", "type": "products" },
+    { "name": "Marked Graphs", "type": "pnpl" },
+    { "name": "Marked Graphs", "type": "products" },
+    { "name": "State Machines", "type": "pnpl" },
+    { "name": "State Machines", "type": "products" }
+  ]
+}
+```
+
+**Example with curl:**
+```bash
+curl http://localhost:8080/pnpl/analyses
 ```
 
 ---
@@ -160,7 +195,7 @@ Runs the specified analysis on a given `.vrb` file.
 **Request body:**
 ```json
 {
-  "vrbPath": "/absolute/path/to/model.vrb",
+  "vrbPath": "/tmp/titan-abc123/annotation.vrb",
   "name": "Free Choice",
   "type": "pnpl"
 }
@@ -185,10 +220,21 @@ Runs the specified analysis on a given `.vrb` file.
 curl -X POST http://localhost:8080/pnpl/analyze \
   -H "Content-Type: application/json" \
   -d '{
-    "vrbPath": "/path/to/examples/150mm.vrb",
+    "vrbPath": "/tmp/titan-abc123/annotation.vrb",
     "name": "Free Choice",
     "type": "pnpl"
   }'
+```
+
+## Intended usage flow
+
+The front-end calls the endpoints in sequence:
+
+```
+1. POST /pnpl/upload       → send the 3 files, get vrbPath
+2. POST /pnpl/validate     → validate the model
+3. GET  /pnpl/analyses     → list available analyses (if valid)
+4. POST /pnpl/analyze      → run selected analysis
 ```
 
 ## Project structure
@@ -200,17 +246,20 @@ titan-api-poc/
 │   └── ...
 └── src/main/java/poc/titan/api/
     ├── TitanApiApplication.java                  # Spring Boot entry point
+    ├── CorsConfig.java                           # CORS configuration for frontend
     ├── analysis/
     │   ├── AnalysisDescriptor.java               # Represents a discovered analysis
     │   ├── PluginScanner.java                    # Scans plugins/ and registers analyses
     │   └── XtextInitializer.java                 # Registers Xtext language at startup
     ├── controller/
     │   ├── AnalysisController.java               # REST endpoints for analysis
+    │   ├── FileUploadController.java             # REST endpoint for file upload
     │   └── ValidationController.java             # REST endpoint for validation
     ├── dto/
     │   ├── AnalysesResponse.java                 # Response for GET /analyses
     │   ├── AnalysisRequest.java                  # Request for POST /analyze
     │   ├── AnalysisResponse.java                 # Response for POST /analyze
+    │   ├── UploadResponse.java                   # Response for POST /upload
     │   ├── ValidationRequest.java                # Request for POST /validate
     │   └── ValidationResponse.java               # Response for POST /validate
     └── service/
@@ -240,19 +289,20 @@ poc-functional-v1
 
 - Core: https://github.com/TITAN-PNPL-WEB/titan-core-fork
 - API: https://github.com/TITAN-PNPL-WEB/titan-api-poc
-
-Both repositories must be used with the same tag: `poc-functional-v1`
+- Frontend: https://github.com/TITAN-PNPL-WEB/titan-front-end
 
 ### What it includes
 
 - Dynamic discovery of analysis plugins from `plugins/` directory
-- `GET /pnpl/analyses` — list all available analyses
+- `POST /pnpl/upload` — upload model files for validation and analysis
 - `POST /pnpl/validate` — validate `.vrb` files using Xtext standalone
+- `GET /pnpl/analyses` — list all available analyses
 - `POST /pnpl/analyze` — run any analysis generically
+- CORS support for frontend integration
 - End-to-end execution decoupled from Eclipse
 
 ## Notes
 
 - This is a POC — no authentication, no error handling, no tests.
-- The `.vrb` path is resolved as an absolute path on the server.
+- Uploaded files are stored in the OS temporary directory and are not automatically cleaned up.
 - The formal API, frontend, and CI/CD pipeline are planned as separate repositories under [TITAN-PNPL-WEB](https://github.com/TITAN-PNPL-WEB).
