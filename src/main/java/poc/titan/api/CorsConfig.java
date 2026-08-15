@@ -14,7 +14,8 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/pnpl/**")
-                        .allowedOrigins("http://localhost:5173")
+                        .allowedOrigins("http://localhost:5173",
+                                "https://titan-front-end-sigma.vercel.app")
                         .allowedMethods("GET", "POST")
                         .allowedHeaders("*");
             }
