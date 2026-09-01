@@ -6,6 +6,9 @@ import poc.titan.api.dto.ValidationRequest;
 import poc.titan.api.dto.ValidationResponse;
 import poc.titan.api.service.ValidationService;
 
+/**
+ * Endpoint for validating a .vrb file before it gets analyzed.
+ */
 @RestController
 @RequestMapping("/pnpl")
 public class ValidationController {
@@ -16,6 +19,9 @@ public class ValidationController {
         this.validationService = validationService;
     }
 
+    /**
+     * Validates the .vrb at the given path and returns any issues found.
+     */
     @PostMapping("/validate")
     public ResponseEntity<ValidationResponse> validate(@RequestBody ValidationRequest req) {
         if (req.getVrbPath() == null || req.getVrbPath().isBlank()) {

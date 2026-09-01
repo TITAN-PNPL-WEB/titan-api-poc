@@ -23,6 +23,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+/**
+ * Validates a .vrb file using the Xtext grammar, outside of Eclipse.
+ */
 @Service
 public class ValidationService {
 
@@ -32,6 +35,10 @@ public class ValidationService {
         this.xtextInitializer = xtextInitializer;
     }
 
+    /**
+     * Loads and validates the .vrb at the given path, checking syntax,
+     * cross-references, and the grammar's custom validation rules.
+     */
     public ValidationResponse validate(String vrbPathStr) {
         Path vrbPath = Path.of(vrbPathStr).toAbsolutePath().normalize();
 
@@ -113,6 +120,9 @@ public class ValidationService {
         return null;
     }
 
+    /**
+     * Builds a response for when validation can't even start, like a missing file.
+     */
     private ValidationResponse errorResponse(String message) {
         ValidationResponse response = new ValidationResponse();
         response.setValid(false);

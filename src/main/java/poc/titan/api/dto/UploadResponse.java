@@ -1,5 +1,8 @@
 package poc.titan.api.dto;
 
+/**
+ * Response body for POST /pnpl/upload.
+ */
 public class UploadResponse {
     private String vrbPath;
     private String message;

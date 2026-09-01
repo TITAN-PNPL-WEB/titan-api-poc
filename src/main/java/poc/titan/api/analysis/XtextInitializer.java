@@ -20,6 +20,10 @@ public class XtextInitializer {
 
     private Injector injector;
 
+    /**
+     * Registers the EMF packages, sets up the Xtext injector, and wires up
+     * resource providers so .vrb files can be parsed and validated headlessly.
+     */
     @PostConstruct
     public void init() {
         // Force registration of EMF packages
@@ -41,6 +45,9 @@ public class XtextInitializer {
         System.out.println("[xtext] Xtext standalone initialized for .vrb validation");
     }
 
+    /**
+     * Returns the Guice injector created during Xtext setup.
+     */
     public Injector getInjector() {
         return injector;
     }

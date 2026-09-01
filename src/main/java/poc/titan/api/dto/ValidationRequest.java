@@ -1,5 +1,8 @@
 package poc.titan.api.dto;
 
+/**
+ * Request body for POST /pnpl/validate.
+ */
 public class ValidationRequest {
     private String vrbPath;
 

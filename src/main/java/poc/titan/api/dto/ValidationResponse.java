@@ -2,6 +2,9 @@ package poc.titan.api.dto;
 
 import java.util.List;
 
+/**
+ * Response body for POST /pnpl/validate: whether the model is valid, and any issues found.
+ */
 public class ValidationResponse {
     private boolean valid;
     private List<ValidationIssue> issues;
@@ -22,6 +25,9 @@ public class ValidationResponse {
         this.issues = issues;
     }
 
+    /**
+     * A single problem found while validating a .vrb file, with its location.
+     */
     public static class ValidationIssue {
         private String severity;  // "ERROR", "WARNING", "INFO"
         private String message;

@@ -2,7 +2,7 @@ package poc.titan.api.analysis;
 
 import java.util.Objects;
 
-/*
+/**
  * Represents a single analysis discovered from a TITAN plugin JAR.
  */
 public class AnalysisDescriptor {

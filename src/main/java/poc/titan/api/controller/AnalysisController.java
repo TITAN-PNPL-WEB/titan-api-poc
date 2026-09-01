@@ -8,6 +8,9 @@ import poc.titan.api.dto.AnalysisRequest;
 import poc.titan.api.dto.AnalysisResponse;
 import poc.titan.api.service.AnalysisService;
 
+/**
+ * REST endpoints for running PNPL analyses and checking which ones are available.
+ */
 @RestController
 @RequestMapping("/pnpl")
 public class AnalysisController {
@@ -20,6 +23,9 @@ public class AnalysisController {
         this.pluginScanner = pluginScanner;
     }
 
+    /**
+     * Runs the requested analysis on a model and returns the result.
+     */
     @PostMapping("/analyze")
     public AnalysisResponse analyze(@RequestBody AnalysisRequest req) throws Exception {
         if (req == null || req.vrbPath == null || req.vrbPath.isBlank()) {
@@ -34,6 +40,9 @@ public class AnalysisController {
         return service.run(req);
     }
 
+    /**
+     * Lists the analyses currently available, discovered from the plugins folder.
+     */
     @GetMapping("/analyses")
     public ResponseEntity<AnalysesResponse> getAnalyses() {
         AnalysesResponse response = new AnalysesResponse();

@@ -10,6 +10,9 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.jar.*;
 
+/**
+ * Discovers available analyses by scanning the JARs in the plugins folder.
+ */
 @Component
 public class PluginScanner {
 
@@ -20,6 +23,10 @@ public class PluginScanner {
     private final List<AnalysisDescriptor> analyses = new ArrayList<>();
     private URLClassLoader pluginClassLoader;
 
+    /**
+     * Scans every JAR in plugins/ for analyses and builds the shared class loader.
+     * Runs once at startup.
+     */
     @PostConstruct
     public void scan() throws Exception {
         Path pluginsPath = Paths.get(PLUGINS_DIR);
@@ -46,6 +53,9 @@ public class PluginScanner {
         System.out.println("[scanner] Found analyses: " + analyses);
     }
 
+    /**
+     * Reads a single JAR's plugin.xml and registers any analyses it declares.
+     */
     private void scanJar(Path jarPath) throws Exception {
         try (JarFile jar = new JarFile(jarPath.toFile())) {
             JarEntry entry = jar.getJarEntry("plugin.xml");
@@ -87,10 +97,16 @@ public class PluginScanner {
                 .findFirst();
     }
 
+    /**
+     * Returns all discovered analyses.
+     */
     public List<AnalysisDescriptor> getAnalyses() {
         return Collections.unmodifiableList(analyses);
     }
 
+    /**
+     * Returns the class loader used to load analysis classes from the plugin JARs.
+     */
     public URLClassLoader getPluginClassLoader() {
         return pluginClassLoader;
     }

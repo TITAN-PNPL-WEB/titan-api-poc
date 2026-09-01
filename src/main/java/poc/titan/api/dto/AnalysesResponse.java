@@ -2,6 +2,9 @@ package poc.titan.api.dto;
 
 import java.util.List;
 
+/**
+ * Response body for GET /pnpl/analyses: the list of analyses currently available.
+ */
 public class AnalysesResponse {
     public List<AnalysisInfo> analyses;
 

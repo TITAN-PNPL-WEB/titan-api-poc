@@ -13,10 +13,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
+/**
+ * Endpoint for uploading the three model files needed before validating or analyzing.
+ */
 @RestController
 @RequestMapping("/pnpl")
 public class FileUploadController {
 
+    /**
+     * Saves the uploaded .vrb, .petrinets and feature model files into a temp
+     * folder together, so the .vrb can resolve the other two by relative path.
+     */
     @PostMapping("/upload")
     public ResponseEntity<UploadResponse> upload(
             @RequestParam("vrb") MultipartFile vrb,

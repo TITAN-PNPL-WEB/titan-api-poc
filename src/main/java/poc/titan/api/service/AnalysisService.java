@@ -11,6 +11,9 @@ import poc.titan.api.dto.AnalysisResponse;
 import java.nio.file.Path;
 import java.util.Optional;
 
+/**
+ * Loads the requested analysis plugin and runs it against a model.
+ */
 @Service
 public class AnalysisService {
 
@@ -20,6 +23,10 @@ public class AnalysisService {
         this.pluginScanner = pluginScanner;
     }
 
+    /**
+     * Finds the analysis by name and type, loads its class, runs it on the
+     * given model, and times how long it took.
+     */
     public AnalysisResponse run(@Nonnull AnalysisRequest req) throws Exception {
         Optional<AnalysisDescriptor> descriptor = pluginScanner.find(req.getName(), req.getType());
 

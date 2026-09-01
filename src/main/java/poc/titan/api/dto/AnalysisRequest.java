@@ -1,5 +1,8 @@
 package poc.titan.api.dto;
 
+/**
+ * Request body for POST /pnpl/analyze.
+ */
 public class AnalysisRequest {
     public String vrbPath;
     private String name; //"Free Choice", "Marked Graph"
