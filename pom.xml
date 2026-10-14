@@ -19,6 +19,14 @@
         <java.version>22</java.version>
     </properties>
 
+    <!-- TITAN core and FeatureIDE JARs are not in Maven Central: they are shipped in local-repo/ -->
+    <repositories>
+        <repository>
+            <id>project-local</id>
+            <url>${project.baseUri}local-repo</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
