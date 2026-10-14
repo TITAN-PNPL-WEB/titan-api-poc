@@ -10,6 +10,8 @@ TITAN is an Eclipse-based tool for the analysis of Petri Net Product Lines (PNPL
 
 See **[docs/QUICKSTART.md](docs/QUICKSTART.md)**.
 
+To sync the core fork with the original TITAN repository or add a new analysis, see **[docs/MAINTENANCE.md](docs/MAINTENANCE.md)**.
+
 Short version (JDK 22 or newer, Maven 3.6.3 or newer):
 
 ```bash
