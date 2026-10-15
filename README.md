@@ -6,73 +6,24 @@ Proof of concept of a REST API that exposes TITAN's analysis and validation capa
 
 TITAN is an Eclipse-based tool for the analysis of Petri Net Product Lines (PNPL). Originally, analyses and validations are triggered through the Eclipse UI. This POC runs the analysis and validation logic headlessly through a REST API, using the TITAN analysis plugins loaded dynamically from the `plugins/` directory.
 
-## Installation and running
+## Documentation
 
-See **[docs/QUICKSTART.md](docs/QUICKSTART.md)**.
+| I want to... | Read |
+|--------------|------|
+| Install and run the API | [docs/QUICKSTART.md](docs/QUICKSTART.md) |
+| Sync the core fork with the original TITAN, update core or analysis JARs, or add a new analysis | [docs/MAINTENANCE.md](docs/MAINTENANCE.md) |
+| Use the API | [Endpoints](#endpoints) (below) |
 
-To sync the core fork with the original TITAN repository or add a new analysis, see **[docs/MAINTENANCE.md](docs/MAINTENANCE.md)**.
+## Available analyses
 
-Short version (JDK 22 or newer, Maven 3.6.3 or newer):
+Loaded at startup from the JARs in `plugins/`:
 
-```bash
-mvn clean package
-java -jar target/titan-api-poc-1.0-SNAPSHOT.jar
-```
-
-The server starts on `http://localhost:8080`. Start it from the repository root, so `plugins/` is found.
-
-## Dependencies
-
-The TITAN core JARs and FeatureIDE are not in Maven Central. They are shipped in `local-repo/`, a file-based Maven repository declared in `pom.xml`, so no manual install is needed:
-
-| groupId | artifactId | version |
-|---------|------------|---------|
-| org.pnpl | analysis-core | 1.0.0 |
-| org.pnpl | analysis-featureide | 1.0.0 |
-| org.pnpl | solvers-sat | 1.0.0 |
-| org.pnpl | model-petrinet | 1.0.0 |
-| org.pnpl | model-variability | 1.0.0 |
-| org.pnpl | model-variability-editor | 1.0.0 |
-| de.ovgu.featureide | featureide-core | 3.11.1 |
-| de.ovgu.featureide | featureide-fm-core | 3.11.1 |
-
-### Updating a JAR in `local-repo/`
-
-Maven copies these JARs to its cache (`~/.m2/repository`) on the first build and uses the cached copy from then on. If you overwrite a JAR and keep its version, machines that already built the project keep using the old one without any error. **Always publish a new version.**
-
-1. Export the JAR from Eclipse (**File -> Export -> Plug-in Development -> Deployable plug-ins and fragments**) to any folder outside `~/.m2` (Maven refuses to deploy from its own local repository).
-2. From the repository root, deploy it with a new version (for example `1.0.1`):
-   ```bash
-   mvn deploy:deploy-file -Durl=file://$PWD/local-repo -DrepositoryId=project-local \
-     -Dfile=<path-to-jar> -DgroupId=org.pnpl -DartifactId=<artifactId> -Dversion=1.0.1 \
-     -Dpackaging=jar -DgeneratePom=true
-   ```
-3. Change that dependency's `<version>` in `pom.xml` to the new version.
-4. Build and test: `mvn clean package`.
-5. Commit `local-repo/` and `pom.xml` together.
-6. Optional: delete the old version folder, for example `local-repo/org/pnpl/<artifactId>/1.0.0/`.
-
-The generated POMs declare no dependencies. If the new JAR needs a library that is not in `pom.xml` yet, add it there.
-
-If you must keep the same version (local testing only), also delete the cached copy on every machine that already built the project: `rm -rf ~/.m2/repository/org/pnpl/<artifactId>`.
-
-## Adding analyses
-
-Analysis plugins are **not declared in `pom.xml`**. They are discovered at startup from the `plugins/` directory by reading each JAR's `plugin.xml`.
-
-To add a new analysis:
-1. Export the plugin JAR from Eclipse (same process as above).
-2. Copy the JAR to `plugins/`.
-3. Restart the API.
-
-Current plugins in `plugins/`:
-
-| JAR | Analysis name |
-|-----|---------------|
-| `org.pnpl.analysis.extendedfreechoice_1.0.0.202604041448.jar` | Extended Free Choice |
-| `org.pnpl.analysis.freechoice_1.0.0.202603162205.jar` | Free Choice |
-| `org.pnpl.analysis.markedgraph_1.0.0.202604041427.jar` | Marked Graphs |
-| `org.pnpl.analysis.statemachine_1.0.0.202604041427.jar` | State Machines |
+| Analysis name | JAR |
+|---------------|-----|
+| Extended Free Choice | `org.pnpl.analysis.extendedfreechoice_1.0.0.202604041448.jar` |
+| Free Choice | `org.pnpl.analysis.freechoice_1.0.0.202603162205.jar` |
+| Marked Graphs | `org.pnpl.analysis.markedgraph_1.0.0.202604041427.jar` |
+| State Machines | `org.pnpl.analysis.statemachine_1.0.0.202604041427.jar` |
 
 Each one is registered as type `pnpl` and type `products`.
 
@@ -113,7 +64,8 @@ Examples with curl are in [docs/QUICKSTART.md](docs/QUICKSTART.md#6-test-it).
 ```
 titan-api-poc/
 ├── docs/QUICKSTART.md                            # Installation and running guide
-├── local-repo/                                   # File-based Maven repo: TITAN core + FeatureIDE JARs
+├── docs/MAINTENANCE.md                           # Updating TITAN JARs and adding analyses
+├── local-repo/                                   # File-based Maven repo: TITAN core + FeatureIDE JARs (not in Maven Central)
 ├── plugins/                                      # Analysis plugin JARs (scanned at startup)
 ├── Dockerfile                                    # Runtime image (needs target/*.jar built first)
 ├── pom.xml

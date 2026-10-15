@@ -1,6 +1,10 @@
 # Maintenance
 
-How to bring changes from the original TITAN repository into this API.
+For maintainers: how to bring TITAN changes into this API. **Not needed to install or run the API** (see [QUICKSTART.md](QUICKSTART.md)).
+
+Steps marked **(untested)** were not run end to end.
+
+## How the API uses TITAN
 
 | Repository | Role |
 |------------|------|
@@ -8,7 +12,24 @@ How to bring changes from the original TITAN repository into this API.
 | [TITAN-PNPL-WEB/titan-core-fork](https://github.com/TITAN-PNPL-WEB/titan-core-fork) | Fork with the headless changes |
 | [TITAN-PNPL-WEB/titan-api-poc](https://github.com/TITAN-PNPL-WEB/titan-api-poc) | This API. Uses JARs exported from the fork. |
 
-Steps marked **(untested)** were not run end to end.
+The API uses the fork's JARs in two places:
+
+| Folder | Contains | How to update |
+|--------|----------|---------------|
+| `local-repo/` | Core JARs (base classes) and FeatureIDE. A Maven repository read by `pom.xml`. | [Update a core JAR](#update-a-core-jar-in-local-repo) |
+| `plugins/` | Analysis JARs. Read at startup, not by Maven. | [Update an analysis JAR](#update-an-analysis-jar-in-plugins) |
+
+Core JARs in `local-repo/`:
+
+| Eclipse project (fork) | groupId | artifactId |
+|------------------------|---------|------------|
+| `org.pnpl.analysis` | `org.pnpl` | `analysis-core` |
+| `org.pnpl.analysis.featureide` | `org.pnpl` | `analysis-featureide` |
+| `org.pnpl.solvers.sat` | `org.pnpl` | `solvers-sat` |
+| `org.pnpl.model.petrinet` | `org.pnpl` | `model-petrinet` |
+| `org.pnpl.model.variability` | `org.pnpl` | `model-variability` |
+| `org.pnpl.model.variability.editor` | `org.pnpl` | `model-variability-editor` |
+| Not in the fork (FeatureIDE) | `de.ovgu.featureide` | `featureide-core`, `featureide-fm-core` |
 
 ## Case 1: the original repository changed
 
@@ -54,60 +75,23 @@ You need write access to `titan-core-fork`.
 git diff --stat <commit-before-sync> HEAD -- src/
 ```
 
-Each folder in `src/` is an Eclipse project. What to do depends on the project:
+Each folder in `src/` is an Eclipse project:
 
-| Changed project | Where it goes in the API | Go to |
-|-----------------|--------------------------|-------|
-| `org.pnpl.analysis`, `org.pnpl.analysis.featureide`, `org.pnpl.solvers.sat`, `org.pnpl.model.petrinet`, `org.pnpl.model.variability`, `org.pnpl.model.variability.editor` | `local-repo/` (core) | Step 4 |
-| `org.pnpl.analysis.extendedfreechoice`, `.freechoice`, `.markedgraph`, `.statemachine` | `plugins/` (analysis) | Step 5 |
-| Anything else (`*.ui`, `*.edit`, `export.*`, ...) | Not used by the API | Nothing to do |
+| Changed project | Action |
+|-----------------|--------|
+| One of the 6 core projects ([table above](#how-the-api-uses-titan)) | [Export it](#export-a-project-from-eclipse), then [update a core JAR](#update-a-core-jar-in-local-repo) |
+| `org.pnpl.analysis.extendedfreechoice`, `.freechoice`, `.markedgraph`, `.statemachine` | [Export it](#export-a-project-from-eclipse), then [update an analysis JAR](#update-an-analysis-jar-in-plugins) |
+| Anything else (`*.ui`, `*.edit`, `export.*`, ...) | Nothing. The API does not use it. |
 
-### 3. Export the changed projects from Eclipse (untested here)
+### 3. Test and commit
 
-1. Import the fork into Eclipse: **File -> Import -> Existing Projects into Workspace**, select `titan-core-fork/src`.
-2. **File -> Export -> Plug-in Development -> Deployable plug-ins and fragments**.
-3. Select the changed projects, choose a destination folder (not inside `~/.m2`), **Finish**.
-4. The JARs are in `<destination>/plugins/`.
-
-### 4. Core project changed: update `local-repo/`
-
-For each core JAR, from the root of `titan-api-poc`. Always use a **new version** (Maven caches the old one):
-
-1. ```bash
-   mvn deploy:deploy-file -Durl=file://$PWD/local-repo -DrepositoryId=project-local -Dfile=<path-to-jar> -DgroupId=org.pnpl -DartifactId=<artifactId> -Dversion=<new-version> -Dpackaging=jar -DgeneratePom=true
-   ```
-2. In `pom.xml`, set that dependency's `<version>` to `<new-version>`.
-
-| Eclipse project | artifactId |
-|-----------------|------------|
-| `org.pnpl.analysis` | `analysis-core` |
-| `org.pnpl.analysis.featureide` | `analysis-featureide` |
-| `org.pnpl.solvers.sat` | `solvers-sat` |
-| `org.pnpl.model.petrinet` | `model-petrinet` |
-| `org.pnpl.model.variability` | `model-variability` |
-| `org.pnpl.model.variability.editor` | `model-variability-editor` |
-
-### 5. Analysis project changed: update `plugins/`
-
-1. Delete the old JAR of that analysis from `plugins/`. If two JARs declare the same analysis, the API uses whichever it finds first, in no guaranteed order.
-2. Copy the new JAR to `plugins/`.
-
-### 6. Build, run, test
-
-1. ```bash
-   mvn clean package
-   ```
-2. ```bash
-   java -jar target/titan-api-poc-1.0-SNAPSHOT.jar
-   ```
-3. Test as in [QUICKSTART.md, step 6](QUICKSTART.md#6-test-it).
-4. Commit `plugins/`, `local-repo/` and `pom.xml` in `titan-api-poc`.
+[Build, test and commit](#build-test-and-commit).
 
 ## Case 2: a new analysis was added
 
 The API needs **no code change**. It finds analyses by reading the `plugin.xml` of each JAR in `plugins/` at startup.
 
-1. **Sync the fork** (Case 1, step 1) so the new project is in `titan-core-fork`.
+1. **Sync the fork** ([Case 1, step 1](#1-sync-the-fork)) so the new project is in `titan-core-fork`.
 2. **Check `plugin.xml`** of the new project. It must register the class under this extension point:
    ```xml
    <extension point="org.pnpl.analysis.analyzer.pnpl">
@@ -116,12 +100,12 @@ The API needs **no code change**. It finds analyses by reading the `plugin.xml` 
    ```
    `name` is the exact name the API will show. `org.pnpl.analysis.analyzer.products` can also be registered, but `products` analyses do not work in the API (see [README, Known limitations](../README.md#known-limitations)).
 3. **Check `META-INF/MANIFEST.MF`** (`Require-Bundle`, `Import-Package`) for dependencies:
-   - The 6 core `org.pnpl.*` projects from step 4: nothing to do.
-   - Any other `org.pnpl.*` project (for example `org.pnpl.analysis.invariant`): export it too and copy its JAR to `plugins/`.
-   - A third-party library (for example `org.eclipse.collections`): add it to `pom.xml` from Maven Central. If it is not in Maven Central, add it to `local-repo/` (step 4).
-4. **Export** the new project, plus any extra `org.pnpl.*` project from step 3 (Case 1, step 3).
+   - One of the 6 core projects: nothing to do.
+   - Any other `org.pnpl.*` project (for example `org.pnpl.analysis.invariant`): export it too. Its JAR also goes to `plugins/`.
+   - A third-party library (for example `org.eclipse.collections`): add it to `pom.xml` from Maven Central. If it is not there, add it to `local-repo/` ([update a core JAR](#update-a-core-jar-in-local-repo), with its own groupId).
+4. **[Export](#export-a-project-from-eclipse)** the new project and any extra `org.pnpl.*` project from step 3.
 5. **Copy** the JARs to `plugins/`.
-6. **Build and run** (Case 1, step 6).
+6. **Build and run** ([build, test and commit](#build-test-and-commit), steps 1 and 2).
 7. **Check it is listed:**
    ```bash
    curl http://localhost:8080/pnpl/analyses
@@ -135,3 +119,48 @@ The API needs **no code change**. It finds analyses by reading the `plugin.xml` 
 9. **Commit** `plugins/`, and `pom.xml` / `local-repo/` if they changed.
 
 The analysis must not depend on the Eclipse workspace (`IFile`, `IProject`). Use `vh.getPetriNet()` and `vh.getFeatureModel()`, like the existing analyses.
+
+## Procedures
+
+### Export a project from Eclipse
+
+**(untested here)**
+
+1. Import the fork: **File -> Import -> Existing Projects into Workspace**, select `titan-core-fork/src`.
+2. **File -> Export -> Plug-in Development -> Deployable plug-ins and fragments**.
+3. Select the projects, choose a destination folder **outside `~/.m2`**, **Finish**.
+4. The JARs are in `<destination>/plugins/`.
+
+### Update a core JAR in `local-repo/`
+
+Always use a **new version** (for example `1.0.0` -> `1.0.1`). Maven caches each version in `~/.m2` and never reads it again: a JAR overwritten with the same version is silently ignored on machines that already built the project.
+
+From the root of `titan-api-poc`:
+
+1. ```bash
+   mvn deploy:deploy-file -Durl=file://$PWD/local-repo -DrepositoryId=project-local -Dfile=<path-to-jar> -DgroupId=<groupId> -DartifactId=<artifactId> -Dversion=<new-version> -Dpackaging=jar -DgeneratePom=true
+   ```
+2. In `pom.xml`, set that dependency's `<version>` to `<new-version>`.
+3. Optional: delete the old version folder, `local-repo/<groupId as path>/<artifactId>/<old-version>/`.
+
+Notes:
+- The generated POMs declare no dependencies. If the new JAR needs a library that is not in `pom.xml`, add it there.
+- Only for local testing with the same version: delete the cached copy, `rm -rf ~/.m2/repository/org/pnpl/<artifactId>`.
+
+### Update an analysis JAR in `plugins/`
+
+1. Delete the old JAR of that analysis from `plugins/`. If two JARs declare the same analysis, the API uses whichever it finds first, in no guaranteed order.
+2. Copy the new JAR to `plugins/`.
+
+### Build, test and commit
+
+From the root of `titan-api-poc`:
+
+1. ```bash
+   mvn clean package
+   ```
+2. ```bash
+   java -jar target/titan-api-poc-1.0-SNAPSHOT.jar
+   ```
+3. Test as in [QUICKSTART.md, step 6](QUICKSTART.md#6-test-it).
+4. Commit `plugins/`, `local-repo/` and `pom.xml`.
