@@ -107,7 +107,7 @@ On startup (`@PostConstruct`) it forces the registration of `PetriNetsPackage` a
 6. Runs `run()` (returns `boolean`) and measures the time. `timeMs` only covers `run()`, not the model loading of the previous step.
 7. Returns an `AnalysisResponse`. The `message` is built in the service: "All products satisfy X" or "Some products do not satisfy X".
 
-For `pnpl` analyses, `AbstractAnalysisPNPL.run()` extracts the presence conditions, calls the plugin's `buildCondition()`, converts the condition to CNF and solves it with SAT4J. For `products` analyses, `AbstractAnalysisProducts.run()` delegates to the plugin's `runProductAnalysis()`.
+For `pnpl` analyses, `AbstractAnalysisPNPL.run()` extracts the presence conditions, calls the plugin's `buildCondition()`, converts the condition to CNF and solves it with SAT4J. For `products` analyses, `AbstractAnalysisProducts.run()` detects headless mode (`vrbFile == null`) and calls `runHeadless()`: it iterates the valid configurations with `FeatureConfigurationIterator`, derives each product in memory (copy of the net, removes the elements whose PC is false, then the references to them, as the Eclipse XMI save and reload does) and calls the plugin's `runProductAnalysis()` with it in the `pn` field. It needs `analysis-core` 1.0.1 or newer.
 
 ### Available plugins (`plugins/`)
 Each JAR registers the same name under both types (`pnpl` and `products`), so there are 8 analyses in total:
@@ -141,7 +141,7 @@ Path(.vrb) -> AbstractAnalysis.loadVariabilityFile(Path)
            -> analysis.run()
 ```
 
-Core classes touched for headless mode: `AbstractAnalysis`, `VariabilityHelper`, `FeatureModelProviderHeadless` (new), `EMFHandler`. The original methods using `IFile`/`IProject` are untouched for Eclipse use.
+Core classes touched for headless mode: `AbstractAnalysis`, `VariabilityHelper`, `FeatureModelProviderHeadless` (new), `EMFHandler`, `AbstractAnalysisProducts` (`runHeadless()`, additions only). The original methods using `IFile`/`IProject` are untouched for Eclipse use.
 
 ## How to regenerate the plugins
 
@@ -203,7 +203,7 @@ curl -X POST http://localhost:8080/pnpl/analyze \
 - **Paths**: `vrbPath` is a path on the server's file system. `/pnpl/upload` stores the files in a new temp directory per request (`Files.createTempDirectory("titan-")`) and returns the `.vrb` path. Those directories are never cleaned up, and the file names come from `getOriginalFilename()` without validation. No endpoint validates `vrbPath` against path traversal yet; always do it when touching this code.
 - **One shared classloader**: the analysis JARs share dependencies. If two plugins ship different versions of the same library, there can be conflicts.
 - **`allProducts`**: it is the boolean result of `run()`. Its exact meaning depends on the analysis (for example, that all products of the line satisfy the property).
-- **`products` analyses do not work headless**: `AbstractAnalysisProducts.run()` returns `false` right away when `VariabilityHelper.getPetriNetFile()` (an Eclipse `IFile`) is `null`, which is always the case in headless mode. All 4 return `allProducts: false` with `timeMs: 0`. The fix belongs in `titan-core-fork`.
+- **`products` analyses are brute force**: `FeatureConfigurationIterator` tries all 2^n combinations of selectable features, so time grows fast with the number of features (about 7 s for `AGV_2`). Its FeatureIDE extensions (`DefaultConfigurationFactory`, `XmlFeatureModelFormat`, workspace loaders) are registered by hand in `runHeadless()`; `FMCoreLibrary` cannot be used because it also registers the UVL format, whose parser (`de.vill`) is not on the classpath. `pnpl` and `products` can disagree on the same model (for example `Vending_Machine`, Free Choice).
 - **Silent wrong results**: if the `.petrinets` or `model.xml` is missing next to the `.vrb`, `/pnpl/analyze` still returns 200 with a meaningless `allProducts` (verified both `true` and `false`). `/pnpl/validate` does detect it.
 - **Working directory**: `plugins/` is resolved from the current directory. Starting the API from another folder gives `{"analyses":[]}`.
 - **Maven mirrors**: a `settings.xml` mirror with `<mirrorOf>*</mirrorOf>` hides `local-repo/` and brings back the "Could not resolve dependencies ... org.pnpl" error. It must be `*,!project-local`.

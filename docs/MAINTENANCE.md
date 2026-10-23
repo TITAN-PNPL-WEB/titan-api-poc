@@ -98,7 +98,7 @@ The API needs **no code change**. It finds analyses by reading the `plugin.xml` 
       <client class="org.pnpl.analysis.<name>.analysis.AnalysisPNPL" name="<Analysis Name>"/>
    </extension>
    ```
-   `name` is the exact name the API will show. `org.pnpl.analysis.analyzer.products` can also be registered, but `products` analyses do not work in the API (see [README, Known limitations](../README.md#known-limitations)).
+   `name` is the exact name the API will show. `org.pnpl.analysis.analyzer.products` can also be registered, with a class that extends `AbstractAnalysisProducts`.
 3. **Check `META-INF/MANIFEST.MF`** (`Require-Bundle`, `Import-Package`) for dependencies:
    - One of the 6 core projects: nothing to do.
    - Any other `org.pnpl.*` project (for example `org.pnpl.analysis.invariant`): export it too. Its JAR also goes to `plugins/`.
@@ -118,7 +118,7 @@ The API needs **no code change**. It finds analyses by reading the `plugin.xml` 
    HTTP 500 with `java.lang.ClassNotFoundException: <class>` in the API log means a dependency is missing. Find which project or library contains `<class>`, add it (step 3), and repeat from step 5.
 9. **Commit** `plugins/`, and `pom.xml` / `local-repo/` if they changed.
 
-The analysis must not depend on the Eclipse workspace (`IFile`, `IProject`). Use `vh.getPetriNet()` and `vh.getFeatureModel()`, like the existing analyses.
+The analysis must not depend on the Eclipse workspace (`IFile`, `IProject`). Use `vh.getPetriNet()` and `vh.getFeatureModel()` (`pnpl`) or the `pn` field (`products`), like the existing analyses.
 
 ## Procedures
 

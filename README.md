@@ -44,7 +44,7 @@ Each one is registered as type `pnpl` and type `products`.
 | POST | `/pnpl/analyze` | `{"vrbPath":"...","name":"Free Choice","type":"pnpl"}` | `{"analysis":"Free Choice","allProducts":true,"timeMs":13,"message":"All products satisfy Free Choice"}` |
 
 - `vrbPath`: absolute path on the server to the `.vrb`. The `.petrinets` and `model.xml` files must be in the same directory, with the names used in the `pn "..."` and `fm "..."` lines of the `.vrb`.
-- `name`, `type`: exactly as returned by `GET /pnpl/analyses` (case-sensitive). `type` is `pnpl` (whole product line) or `products` (each derived product, see [Known limitations](#known-limitations)).
+- `name`, `type`: exactly as returned by `GET /pnpl/analyses` (case-sensitive). `type` is `pnpl` (whole product line) or `products` (each valid product, one by one).
 - `/pnpl/upload` saves the three files in a new temporary directory and returns the `vrbPath` to use in the other calls.
 - `/pnpl/validate` always returns HTTP 200. Invalid models return `valid: false` with a list of `{severity, message, line, column}` issues.
 
@@ -107,7 +107,7 @@ Repositories:
 
 ## Known limitations
 
-- `type: "products"` analyses always return `allProducts: false` with `timeMs: 0`: they still depend on Eclipse (`IFile`) and do not run headless. Use `type: "pnpl"`.
+- `type: "products"` tries every combination of the feature model's selectable features (2^n) and analyzes each valid product. It gets slow as features grow (about 7 s per analysis for `AGV_2`, 36 products). `pnpl` and `products` can give different results for the same model.
 - `/pnpl/analyze` does not detect a missing `.petrinets` or `model.xml`: it can return HTTP 200 with a wrong result. Call `/pnpl/validate` first.
 - Errors (missing file, unknown analysis) return a generic HTTP 500. The cause is only in the server log.
 - `timeMs` only measures the analysis itself, not model loading.
