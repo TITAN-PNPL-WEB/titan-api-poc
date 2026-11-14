@@ -120,7 +120,7 @@ Expected: `analysis-core  analysis-featureide  model-petrinet  model-variability
    ```
    Alternative to steps 1 and 2: `mvn spring-boot:run`.
 
-The API listens on **http://localhost:8080**. It is ready when the log shows `Started TitanApiApplication`. The log must also show `[scanner] Found analyses: [...]` with 8 entries.
+The API listens on **http://localhost:8080**. It is ready when the log shows `Started TitanApiApplication`. The log must also show `Found analyses: [...]` with 8 entries.
 
 Stop it with `Ctrl+C`.
 
@@ -162,7 +162,7 @@ Open a second terminal. You need a PNPL model: a folder with `annotation.vrb`, i
 | 3 | `Fatal error compiling: error: release version 22 not supported` | Maven runs with a JDK older than 22 (see `Java version:` in `mvn -version`). | Point `JAVA_HOME` to JDK 22+. macOS: `export JAVA_HOME=$(/usr/libexec/java_home -v 22+)`. Linux: `sdk use java 25-tem`. Windows: `setx JAVA_HOME "<JDK folder>"`. |
 | 4 | `UnsupportedClassVersionError ... class file version 66.0` | `java -jar` runs with a JDK older than 22. | Use JDK 22+ (see issue 3), then check `java -version`. |
 | 5 | `Web server failed to start. Port 8080 was already in use.` | Another process (often a previous run of the API) uses port 8080. | Stop it, or use another port: `java -jar target/titan-api-poc-1.0-SNAPSHOT.jar --server.port=8081`. Find the process: `lsof -i :8080` (macOS/Linux), `netstat -ano \| findstr :8080` (Windows). |
-| 6 | `{"analyses":[]}` and log `[scanner] plugins/ directory not found, skipping.` | The API was started from another folder. `plugins/` is resolved from the current folder. | `cd titan-api-poc` and start it again. |
+| 6 | `{"analyses":[]}` and log `plugins/ directory not found, no analyses available` | The API was started from another folder. `plugins/` is resolved from the current folder. | `cd titan-api-poc` and start it again. |
 | 7 | An analysis is missing or a JAR change has no effect | `plugins/` is scanned only at startup. | Check the JAR is in `plugins/` and restart the API. To update JARs, see [MAINTENANCE.md](MAINTENANCE.md). |
 | 8 | HTTP 500 on `/pnpl/analyze`, log `java.nio.file.NoSuchFileException: ...` | `vrbPath` does not exist. A relative path is resolved from the API's folder, not yours. | Use an absolute path to an existing `.vrb`. |
 | 9 | HTTP 500 on `/pnpl/analyze`, log `Analysis not found: name='...' type='...'` | `name` or `type` do not match exactly. They are case-sensitive: `"PNPL"` fails. | Copy `name` and `type` from `GET /pnpl/analyses`. `type` is `pnpl` or `products`. |

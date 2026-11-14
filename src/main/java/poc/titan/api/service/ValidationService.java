@@ -9,6 +9,8 @@ import org.eclipse.xtext.util.CancelIndicator;
 import org.eclipse.xtext.validation.CheckMode;
 import org.eclipse.xtext.validation.IResourceValidator;
 import org.eclipse.xtext.validation.Issue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import poc.titan.api.analysis.XtextInitializer;
 import poc.titan.api.dto.ValidationResponse;
@@ -29,6 +31,8 @@ import java.util.List;
 @Service
 public class ValidationService {
 
+    private static final Logger log = LoggerFactory.getLogger(ValidationService.class);
+
     private final XtextInitializer xtextInitializer;
 
     public ValidationService(XtextInitializer xtextInitializer) {
@@ -42,7 +46,9 @@ public class ValidationService {
     public ValidationResponse validate(String vrbPathStr) {
         Path vrbPath = Path.of(vrbPathStr).toAbsolutePath().normalize();
 
+        log.info("Validating {}", vrbPath.getFileName());
         if (!Files.exists(vrbPath)) {
+            log.warn("File not found: {}", vrbPath);
             return errorResponse("File not found: " + vrbPath);
         }
 
@@ -91,9 +97,12 @@ public class ValidationService {
             ValidationResponse response = new ValidationResponse();
             response.setValid(issueList.stream().noneMatch(i -> "ERROR".equals(i.getSeverity())));
             response.setIssues(issueList);
+            log.info("{} is {} ({} issues)", vrbPath.getFileName(), response.isValid() ? "valid" : "invalid", issueList.size());
+            issueList.forEach(i -> log.info("{} at line {}: {}", i.getSeverity(), i.getLine(), i.getMessage()));
             return response;
 
         } catch (Exception e) {
+            log.error("Validation of {} failed: {}", vrbPath.getFileName(), e.toString());
             return errorResponse("Validation failed: " + e.getMessage());
         }
     }

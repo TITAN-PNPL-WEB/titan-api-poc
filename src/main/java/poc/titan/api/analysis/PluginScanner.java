@@ -1,6 +1,8 @@
 package poc.titan.api.analysis;
 
 import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.*;
 import javax.xml.parsers.*;
@@ -15,6 +17,8 @@ import java.util.jar.*;
  */
 @Component
 public class PluginScanner {
+
+    private static final Logger log = LoggerFactory.getLogger(PluginScanner.class);
 
     private static final String PLUGINS_DIR = "plugins";
     private static final String EXT_PNPL     = "org.pnpl.analysis.analyzer.pnpl";
@@ -31,7 +35,7 @@ public class PluginScanner {
     public void scan() throws Exception {
         Path pluginsPath = Paths.get(PLUGINS_DIR);
         if (!Files.exists(pluginsPath)) {
-            System.out.println("[scanner] plugins/ directory not found, skipping.");
+            log.warn("plugins/ directory not found, no analyses available");
             return;
         }
 
@@ -50,7 +54,7 @@ public class PluginScanner {
                 Thread.currentThread().getContextClassLoader()
         );
 
-        System.out.println("[scanner] Found analyses: " + analyses);
+        log.info("Found analyses: {}", analyses);
     }
 
     /**

@@ -7,6 +7,8 @@ import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
 import org.eclipse.xtext.resource.IResourceServiceProvider;
 import org.pnpl.model.variability.editor.PNPL_variabilityStandaloneSetup;
 import org.pnpl.model.variability.editor.providers.PetriNetsResourceServiceProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import PetriNets.PetriNetsPackage;
 import variability.VariabilityPackage;
@@ -17,6 +19,8 @@ import variability.VariabilityPackage;
  */
 @Component
 public class XtextInitializer {
+
+    private static final Logger log = LoggerFactory.getLogger(XtextInitializer.class);
 
     private Injector injector;
 
@@ -42,7 +46,7 @@ public class XtextInitializer {
         Resource.Factory.Registry.INSTANCE.getExtensionToFactoryMap()
                 .put("petrinets", new XMIResourceFactoryImpl());
 
-        System.out.println("[xtext] Xtext standalone initialized for .vrb validation");
+        log.info("Xtext standalone initialized for .vrb validation");
     }
 
     /**

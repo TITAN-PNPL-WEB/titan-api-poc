@@ -2,6 +2,8 @@ package poc.titan.api.service;
 
 import jakarta.annotation.Nonnull;
 import org.pnpl.analysis.analyzer.AbstractAnalysis;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import poc.titan.api.analysis.AnalysisDescriptor;
 import poc.titan.api.analysis.PluginScanner;
@@ -17,6 +19,8 @@ import java.util.Optional;
 @Service
 public class AnalysisService {
 
+    private static final Logger log = LoggerFactory.getLogger(AnalysisService.class);
+
     private final PluginScanner pluginScanner;
 
     public AnalysisService(PluginScanner pluginScanner) {
@@ -31,20 +35,29 @@ public class AnalysisService {
         Optional<AnalysisDescriptor> descriptor = pluginScanner.find(req.getName(), req.getType());
 
         if (descriptor.isEmpty()) {
+            log.warn("Analysis not found: name='{}' type='{}'", req.getName(), req.getType());
             throw new IllegalArgumentException(
                     "Analysis not found: name='" + req.getName() + "' type='" + req.getType() + "'"
             );
         }
 
-        Class<?> clazz = pluginScanner.getPluginClassLoader().loadClass(descriptor.get().className);
-        AbstractAnalysis analysis = (AbstractAnalysis) clazz.getDeclaredConstructor().newInstance();
-
         Path vrbPath = Path.of(req.vrbPath).toAbsolutePath().normalize();
-        analysis.loadVariabilityFile(vrbPath);
+        log.info("Running {} on {}", descriptor.get(), vrbPath.getFileName());
 
-        long start = System.currentTimeMillis();
-        boolean result = analysis.run();
-        long end = System.currentTimeMillis();
+        boolean result;
+        long start, end;
+        try {
+            Class<?> clazz = pluginScanner.getPluginClassLoader().loadClass(descriptor.get().className);
+            AbstractAnalysis analysis = (AbstractAnalysis) clazz.getDeclaredConstructor().newInstance();
+            analysis.loadVariabilityFile(vrbPath);
+
+            start = System.currentTimeMillis();
+            result = analysis.run();
+            end = System.currentTimeMillis();
+        } catch (Exception e) {
+            log.error("{} failed: {}", descriptor.get(), e.toString());
+            throw e;
+        }
 
         AnalysisResponse res = new AnalysisResponse();
         res.analysis = req.getName();
@@ -53,6 +66,7 @@ public class AnalysisService {
         res.message = result
                 ? "All products satisfy " + req.getName()
                 : "Some products do not satisfy " + req.getName();
+        log.info("{}: {} ({} ms)", descriptor.get(), res.message, res.timeMs);
         return res;
     }
 }

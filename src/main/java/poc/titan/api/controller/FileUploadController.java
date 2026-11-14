@@ -1,5 +1,7 @@
 package poc.titan.api.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +21,8 @@ import java.util.Objects;
 @RestController
 @RequestMapping("/pnpl")
 public class FileUploadController {
+
+    private static final Logger log = LoggerFactory.getLogger(FileUploadController.class);
 
     /**
      * Saves the uploaded .vrb, .petrinets and feature model files into a temp
@@ -43,7 +47,7 @@ public class FileUploadController {
         petrinets.transferTo(pnPath);
         featureModel.transferTo(fmPath);
 
-        System.out.println("[upload] Files saved to: " + tempDir);
+        log.info("Files saved to {}", tempDir);
 
         return ResponseEntity.ok(
                 new UploadResponse(vrbPath.toString(), "Files uploaded successfully")
