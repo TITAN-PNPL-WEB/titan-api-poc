@@ -107,7 +107,8 @@ Repositories:
 
 ## Known limitations
 
-- `type: "products"` tries every combination of the feature model's selectable features (2^n) and analyzes each valid product. It gets slow as features grow (about 7 s per analysis for `AGV_2`, 36 products). `pnpl` and `products` can give different results for the same model.
+- `type: "products"` tries every combination of the feature model's selectable features (2^n) and analyzes each valid product. It gets slow as features grow (about 7 s per analysis for `AGV_2`, 36 products).
+- `type: "pnpl"` does not use the feature model constraints: the SAT can find a violation in an invalid configuration, so it can return `false` where `products` returns `true` (for example Free Choice on `FilmProduction`).
 - `/pnpl/analyze` does not detect a missing `.petrinets` or `model.xml`: it can return HTTP 200 with a wrong result. Call `/pnpl/validate` first.
 - Errors (missing file, unknown analysis) return a generic HTTP 500. The cause is only in the server log.
 - `timeMs` only measures the analysis itself, not model loading.
